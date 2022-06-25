@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="cca02a8f-60bc-4c47-846e-da0d8fdfe31c" >
+		<http:listener-connection host="0.0.0.0" port="${http.port}" protocol="HTTPS">
+			<tls:context >
+				<tls:key-store type="pkcs12" path="mule_server_dev.p12" alias="mule_server_dev" keyPassword="password" password="password"/>
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="6101920d-2a23-480b-ad76-777ae3c588ed" >
+		<http:request-connection host="${request.host}" port="${request.port}" protocol="${request.protocol}"/>
+	</http:request-config>
+	<configuration defaultResponseTimeout="${http.responseTimeout}"/>
+	<configuration-properties doc:name="Configuration properties" doc:id="56ca2475-50d0-4a73-ac90-fbcfe69acc3e" file="config.yaml" />
+	<flow name="portal-reverse-proxyFlow" doc:id="b75dda7b-06f4-4a10-a3db-8673faa3740d" >
+		<http:listener doc:name="Listener" doc:id="c8cb1423-e368-4676-bab4-07c91980b3e8" config-ref="HTTP_Listener_config" path="${http.path}">
+			<http:response statusCode="#[attributes.statusCode]" reasonPhrase="#[attributes.reasonPhrase]">
+				<http:headers ><![CDATA[#[if (vars.responseHeaders?) vars.responseHeaders else {}]]]></http:headers>
+			</http:response>
+		</http:listener>
+		<set-variable value="#[attributes.headers]" doc:name="Set Variable" doc:id="ffef4731-73f3-4729-975f-491dd8056557" variableName="requestHeaders"/>
+		<logger level="DEBUG" doc:name="Logger" doc:id="6b2ee441-ee74-4847-85bb-3a455e92f22d" category="reverse-proxy"/>
+		<http:request method="#[attributes.method]" doc:name="Request" doc:id="dc2260a5-d473-4451-b85d-6dae1bdee6e3" config-ref="HTTP_Request_configuration" path="#[attributes.maskedRequestPath]">
+			<http:headers ><![CDATA[#[%dw 2.0
+import * from dw::util::Values
+output application/java
+---
+vars.requestHeaders as Object default {} update "host" with p('request.host')
+++ {
+	"X-Forwarded-Host" : p('vanity.domain'),
+	"X-Forwarded-Path" : p('vanity.path')
+}]]]></http:headers>
+			<http:uri-params ><![CDATA[#[attributes.uriParams]]]></http:uri-params>
+			<http:query-params ><![CDATA[#[attributes.queryParams]]]></http:query-params>
+			<http:response-validator >
+				<http:success-status-code-validator values="0..599" />
+			</http:response-validator>
+		</http:request>
+		<set-variable value='#[attributes.headers]' doc:name="Set Variable" doc:id="37b9ca57-b772-47ea-a663-b871f6883407" variableName="responseHeaders" />
+		<logger level="INFO" doc:name="Logger" doc:id="f5df6b4c-d1a2-4bde-86fd-6c0a4b7aae04" category="reverse-proxy" message="#[vars.responseHeaders]"/>
+        <error-handler>
+            <on-error-continue type="HTTP:TIMEOUT" logException="false">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json 
+--- 
+{
+  "error": ""
+}]]></ee:set-payload>
+                        <ee:set-attributes><![CDATA[
+                            {
+                            statusCode: 504
+                            }
+                        ]]></ee:set-attributes>
+                    </ee:message>
+                </ee:transform>
+            </on-error-continue>
+        </error-handler>
+	</flow>
+</mule>

@@ -1,0 +1,15 @@
+api.id: "17930958"
+http:
+  port: "8082"
+  path: /*
+  responseTimeout: "10000"
+request:
+  host: anypoint.mulesoft.com
+  port: "443"
+  path: /
+  protocol: HTTPS
+  api.parser: AUTO
+vanity:
+  #domain: "masaki.kawaguchi.com"
+  domain: "localhost:8082"
+  path: "/"
