@@ -10,6 +10,6 @@ request:
   protocol: HTTPS
   api.parser: AUTO
 vanity:
-  #domain: "masaki.kawaguchi.com"
   domain: "localhost:8082"
+  #path: "/exchange/portals/-978/"
   path: "/"
