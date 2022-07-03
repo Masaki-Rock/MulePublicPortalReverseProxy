@@ -25,7 +25,7 @@ http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/
 			</http:response>
 		</http:listener>
 		<set-variable value="#[attributes.headers]" doc:name="Set Request Headers" doc:id="ffef4731-73f3-4729-975f-491dd8056557" variableName="requestHeaders"/>
-		<logger level="DEBUG" doc:name="Write Masked RequestPath" doc:id="6b2ee441-ee74-4847-85bb-3a455e92f22d" category="reverse-proxy" message="#[attributes.maskedRequestPath]"/>
+		<logger level="INFO" doc:name="Write Masked RequestPath" doc:id="6b2ee441-ee74-4847-85bb-3a455e92f22d" category="reverse-proxy" message="#[attributes.maskedRequestPath]"/>
 		<choice doc:name="Resource Path Condition Check" doc:id="a8ab443f-7e62-4bec-8660-b3cb788f4551" >
 			<when expression='#[(attributes.maskedRequestPath startsWith "/shared")&#10;or (attributes.maskedRequestPath startsWith "/icons")&#10;or (attributes.maskedRequestPath startsWith "/node_modules")&#10;or (attributes.maskedRequestPath startsWith "/exchange/api-console")]'>
 				<http:request method="#[attributes.method]" doc:name="Get material request" doc:id="e90787d0-b9c9-4eda-b8a7-a6d0a68223db" config-ref="HTTP_Request_configuration" path="#[attributes.maskedRequestPath]">
@@ -65,7 +65,7 @@ vars.requestHeaders as Object default {} update "host" with p('request.host')
 			</otherwise>
 		</choice>
 		<set-variable value='#[attributes.headers]' doc:name="Get Response Headers" doc:id="37b9ca57-b772-47ea-a663-b871f6883407" variableName="responseHeaders" />
-		<logger level="INFO" doc:name="Write Response Headers" doc:id="f5df6b4c-d1a2-4bde-86fd-6c0a4b7aae04" category="reverse-proxy" message="#[vars.responseHeaders]"/>
+		<logger level="DEBUG" doc:name="Write Response Headers" doc:id="f5df6b4c-d1a2-4bde-86fd-6c0a4b7aae04" category="reverse-proxy" message="#[vars.responseHeaders]"/>
         <error-handler>
             <on-error-continue type="HTTP:TIMEOUT" logException="false">
                 <ee:transform>

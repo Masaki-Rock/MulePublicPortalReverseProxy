@@ -13,3 +13,4 @@ vanity:
   domain: "localhost:8082"
   #path: "/exchange/portals/-978/"
   path: "/"
+  content_path: "/exchange/portals/-978/"
