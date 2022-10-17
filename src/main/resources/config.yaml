@@ -1,16 +1,15 @@
-api.id: "17930958"
+api:
+  id: "xxxxxxx"
 http:
-  port: "8082"
+  port: "443"
   path: /*
   responseTimeout: "10000"
 request:
   host: anypoint.mulesoft.com
   port: "443"
-  path: /
+  path: "/exchange/portals/accenture-83335/"
   protocol: HTTPS
   api.parser: AUTO
 vanity:
-  domain: "localhost:8082"
-  #path: "/exchange/portals/-978/"
+  domain: "developers.souldofworld.work"
   path: "/"
-  content_path: "/exchange/portals/-978/"

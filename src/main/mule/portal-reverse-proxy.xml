@@ -9,7 +9,7 @@ http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="cca02a8f-60bc-4c47-846e-da0d8fdfe31c" >
 		<http:listener-connection host="0.0.0.0" port="${http.port}" protocol="HTTPS">
 			<tls:context >
-				<tls:key-store type="pkcs12" path="mule_server_dev.p12" alias="mule_server_dev" keyPassword="password" password="password"/>
+				<tls:key-store type="pkcs12" path="server.p12" alias="server" keyPassword="password" password="password"/>
 			</tls:context>
 		</http:listener-connection>
 	</http:listener-config>
@@ -28,7 +28,7 @@ http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/
 		<logger level="INFO" doc:name="Write Masked RequestPath" doc:id="6b2ee441-ee74-4847-85bb-3a455e92f22d" category="reverse-proxy" message="#[attributes.maskedRequestPath]"/>
 		<choice doc:name="Resource Path Condition Check" doc:id="a8ab443f-7e62-4bec-8660-b3cb788f4551" >
 			<when expression='#[(attributes.maskedRequestPath startsWith "/shared")&#10;or (attributes.maskedRequestPath startsWith "/icons")&#10;or (attributes.maskedRequestPath startsWith "/node_modules")&#10;or (attributes.maskedRequestPath startsWith "/exchange/api-console")]'>
-				<http:request method="#[attributes.method]" doc:name="Get material request" doc:id="e90787d0-b9c9-4eda-b8a7-a6d0a68223db" config-ref="HTTP_Request_configuration" path="#[attributes.maskedRequestPath]">
+				<http:request method="#[attributes.method]" doc:name="Get material request" doc:id="e90787d0-b9c9-4eda-b8a7-a6d0a68223db" config-ref="HTTP_Request_configuration" path="#[attributes.maskedRequestPath]" followRedirects="false">
 					<http:headers ><![CDATA[#[%dw 2.0
 import * from dw::util::Values
 output application/java
@@ -46,7 +46,7 @@ vars.requestHeaders as Object default {} update "host" with p('request.host')
 				</http:request>
 			</when>
 			<otherwise >
-				<http:request method="#[attributes.method]" doc:name="Get content request" doc:id="dc2260a5-d473-4451-b85d-6dae1bdee6e3" config-ref="HTTP_Request_configuration" path='#[p("vanity.content_path") ++ attributes.maskedRequestPath]'>
+				<http:request method="#[attributes.method]" doc:name="Get content request" doc:id="dc2260a5-d473-4451-b85d-6dae1bdee6e3" config-ref="HTTP_Request_configuration" path='#[p("request.path") ++ attributes.maskedRequestPath]' followRedirects="false">
 			<http:headers><![CDATA[#[%dw 2.0
 import * from dw::util::Values
 output application/java
@@ -65,8 +65,9 @@ vars.requestHeaders as Object default {} update "host" with p('request.host')
 			</otherwise>
 		</choice>
 		<set-variable value='#[attributes.headers]' doc:name="Get Response Headers" doc:id="37b9ca57-b772-47ea-a663-b871f6883407" variableName="responseHeaders" />
-		<logger level="DEBUG" doc:name="Write Response Headers" doc:id="f5df6b4c-d1a2-4bde-86fd-6c0a4b7aae04" category="reverse-proxy" message="#[vars.responseHeaders]"/>
-        <error-handler>
+		<logger level="INFO" doc:name="Write Response Headers" doc:id="f5df6b4c-d1a2-4bde-86fd-6c0a4b7aae04" category="reverse-proxy" message="#[vars.responseHeaders]"/>
+        <logger level="INFO" doc:name="Write Response body" doc:id="1badf57e-f2ea-4337-8823-8e3a3c79c916" category="reverse-proxy" />
+		<error-handler>
             <on-error-continue type="HTTP:TIMEOUT" logException="false">
                 <ee:transform>
                     <ee:message>
